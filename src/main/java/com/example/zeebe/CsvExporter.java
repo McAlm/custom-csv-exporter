@@ -5,7 +5,6 @@ import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -30,13 +29,36 @@ public class CsvExporter implements Exporter {
         headerWritten = false;
     }
 
+    private boolean fileHasHeaders() {
+        java.io.File file = new java.io.File(CSV_FILE_PATH);
+        if (!file.exists()) {
+            return false;
+        }
+
+        try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(file))) {
+            String firstLine = reader.readLine();
+            if (firstLine != null) {
+                // Check if the first line contains our header columns
+                return firstLine.contains("sequence") &&
+                       firstLine.contains("timestamp") &&
+                       firstLine.contains("value.processInstanceKey") &&
+                       firstLine.contains("value.elementId") &&
+                       firstLine.contains("intent");
+            }
+        } catch (IOException e) {
+            System.err.println("Error checking CSV headers: " + e.getMessage());
+        }
+        return false;
+    }
+
     @Override
     public void open(Controller controller) {
         this.controller = controller;
         try {
             fileWriter = new FileWriter(CSV_FILE_PATH, true);
-            // Write header if not already written
-            if (!headerWritten) {
+            // Write header only if file doesn't exist or doesn't have headers
+            java.io.File file = new java.io.File(CSV_FILE_PATH);
+            if (!file.exists() || !fileHasHeaders()) {
                 writeCsvRecord(
                     "sequence",
                     "timestamp",
@@ -56,7 +78,7 @@ public class CsvExporter implements Exporter {
         try {
             String processInstanceKey = null;
             String elementId = null;
-            String intent = null;
+            String intentStr = null;
 
             // Handle different event types based on the intent
             Intent intentValue = record.getIntent();
@@ -68,8 +90,31 @@ public class CsvExporter implements Exporter {
                 if (record.getValue() != null) {
                     try {
                         processInstanceKey = String.valueOf(record.getKey());
-                        elementId = record.toJson();
-                        System.out.println(elementId);
+
+                        // Extract elementId and intent from JSON string
+                        String jsonStr = record.toJson();
+                        System.out.println(jsonStr);
+
+                        // Simple JSON parsing without external dependencies
+                        int valueStart = jsonStr.indexOf("\"value\":") + 8;
+                        int valueEnd = jsonStr.indexOf('}', valueStart);
+                        if (valueStart > 0 && valueEnd > 0) {
+                            String valueJson = jsonStr.substring(valueStart, valueEnd);
+
+                            // Extract elementId
+                            int elementIdStart = valueJson.indexOf("\"elementId\":\"") + 13;
+                            int elementIdEnd = valueJson.indexOf('\"', elementIdStart);
+                            if (elementIdStart > 0 && elementIdEnd > 0) {
+                                elementId = valueJson.substring(elementIdStart, elementIdEnd);
+                            }
+
+                            // Extract intent
+                            int intentStart = jsonStr.indexOf("\"intent\":\"") + 10;
+                            int intentEnd = jsonStr.indexOf('\"', intentStart);
+                            if (intentStart > 0 && intentEnd > 0) {
+                                intentStr = jsonStr.substring(intentStart, intentEnd);
+                            }
+                        }
                     } catch (Exception e) {
                         System.err.println("Error processing record value: " + e.getMessage());
                     }
@@ -81,8 +126,8 @@ public class CsvExporter implements Exporter {
                         sequence.incrementAndGet(),
                         Instant.ofEpochMilli(record.getTimestamp()).toString(),
                         processInstanceKey,
-                        elementId,
-                        intent
+                        elementId != null ? elementId : "",
+                        intentStr != null ? intentStr : ""
                 );
             }
         } catch (IOException e) {

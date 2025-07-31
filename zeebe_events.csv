@@ -1,3 +1,0 @@
-sequence,timestamp,value.processInstanceKey,value.elementId,intent
-sequence,timestamp,value.processInstanceKey,value.elementId,intent
-1,1750250130825,12345,startEvent,ELEMENT_COMPLETED
