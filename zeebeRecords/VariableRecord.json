@@ -1,0 +1,26 @@
+{
+    "partitionId": 1,
+    "value": {
+        "name": "lastName",
+        "value": "\"Wiese\"",
+        "bpmnProcessId": "testProcess",
+        "processDefinitionKey": 2251799813685293,
+        "processInstanceKey": 2251799813685327,
+        "tenantId": "<default>",
+        "scopeKey": 2251799813685327
+    },
+    "key": 2251799813685402,
+    "timestamp": 1754304063789,
+    "valueType": "VARIABLE",
+    "authorizations": {},
+    "operationReference": -1,
+    "brokerVersion": "8.8.0",
+    "intent": "CREATED",
+    "rejectionType": "NULL_VAL",
+    "rejectionReason": "",
+    "recordType": "EVENT",
+    "sourceRecordPosition": 309,
+    "recordVersion": 1,
+    "batchOperationReference": -1,
+    "position": 318
+}
