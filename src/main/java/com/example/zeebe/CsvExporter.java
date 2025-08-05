@@ -17,8 +17,10 @@ public class CsvExporter implements Exporter {
 
     private String CSV_FILE_PATH;
     private FileWriter fileWriter;
+    private static final String CSV_DELIMITER = "@@"; // Separator for CSV values
 
-    Controller controller;
+    // Controller to manage the exporter lifecycle
+    private Controller controller;
 
     public CsvExporter() {
         CSV_FILE_PATH = "zeebe_events.csv";
@@ -137,7 +139,7 @@ public class CsvExporter implements Exporter {
         for (int i = 0; i < values.length; i++) {
             stringValues[i] = String.valueOf(values[i]);
         }
-        writeLine(String.join(",", stringValues));
+        writeLine(String.join(CSV_DELIMITER, stringValues));
     }
 
     private void writeLine(String line) throws IOException {
